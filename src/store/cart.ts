@@ -7,6 +7,8 @@ interface CartState {
   add: (product: Product, quantity?: number) => void;
   remove: (productId: string) => void;
   decrement: (productId: string, quantity?: number) => void;
+  setQuantity: (productId: string, quantity: number) => void;
+  getQuantity: (productId: string) => number;
   clear: () => void;
   itemCount: () => number;
   total: () => number;
@@ -19,7 +21,16 @@ export const useCartStore = create<CartState>()(
       add: (product, quantity = 1) =>
         set((state) => {
           const existing = state.items[product.id];
-          const nextQty = (existing?.quantity ?? 0) + quantity;
+          const max = Math.max(0, product.quantity ?? 0);
+          if (max === 0) {
+            return state;
+          }
+          const desired = (existing?.quantity ?? 0) + quantity;
+          const nextQty = Math.min(desired, max);
+          if (nextQty <= 0) {
+            const { [product.id]: _r, ...rest } = state.items;
+            return { items: rest } as Pick<CartState, 'items'>;
+          }
           return {
             items: {
               ...state.items,
@@ -48,6 +59,24 @@ export const useCartStore = create<CartState>()(
             },
           };
         }),
+      setQuantity: (productId, quantity) =>
+        set((state) => {
+          const item = state.items[productId];
+          if (quantity <= 0) {
+            const { [productId]: _, ...rest } = state.items;
+            return { items: rest } as Pick<CartState, 'items'>;
+          }
+          if (!item) return state;
+          const max = Math.max(0, item.product.quantity ?? 0);
+          const clamped = Math.min(quantity, max);
+          return {
+            items: {
+              ...state.items,
+              [productId]: { ...item, quantity: clamped },
+            },
+          };
+        }),
+      getQuantity: (productId) => get().items[productId]?.quantity ?? 0,
       clear: () => set({ items: {} }),
       itemCount: () => Object.values(get().items).reduce((acc, it) => acc + it.quantity, 0),
       total: () => Object.values(get().items).reduce((acc, it) => acc + it.product.price * it.quantity, 0),

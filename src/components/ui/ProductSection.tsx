@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Product, ProductCategory } from '@/types';
 import ProductCard from './ProductCard';
@@ -26,15 +26,24 @@ const ProductSection: React.FC<ProductSectionProps> = ({
 
   const [page, setPage] = useState(0);
 
-  // compute page size responsively on client
+  // compute page size responsively with resize listener
+  const [viewportWidth, setViewportWidth] = useState<number>(
+    typeof window === 'undefined' ? 1024 : window.innerWidth
+  );
+
+  useEffect(() => {
+    const onResize = () => setViewportWidth(window.innerWidth);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+
   const pageSize = useMemo(() => {
-    if (typeof window === 'undefined') return pageSizes.md;
-    const w = window.innerWidth;
+    const w = viewportWidth;
     if (w >= 1280) return pageSizes.xl;
     if (w >= 1024) return pageSizes.lg;
     if (w >= 768) return pageSizes.md;
     return pageSizes.sm;
-  }, [window?.innerWidth]);
+  }, [viewportWidth]);
 
   const totalPages = Math.max(1, Math.ceil(products.length / pageSize));
   const current = Math.min(page, totalPages - 1);

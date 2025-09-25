@@ -1,4 +1,4 @@
-import { Product, Store, SmartListTag, ProductCategory, DeliveryInfo } from '@/types';
+import { Product, Store, SmartListTag, ProductCategory, DeliveryInfo, Order, OrderItem } from '@/types';
 
 export const storeData: Store = {
   id: '1',
@@ -56,9 +56,10 @@ export const products: Product[] = [
     id: '1',
     name: 'Avocado',
     price: 5.99,
-    emoji: '🥑',
+    image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&h=400&q=80',
     category: categories[0],
     inStock: true,
+    quantity: 12,
   },
   {
     id: '2',
@@ -66,6 +67,7 @@ export const products: Product[] = [
     price: 1.99,
     category: categories[0],
     inStock: true,
+    quantity: 24,
   },
   {
     id: '3',
@@ -73,6 +75,7 @@ export const products: Product[] = [
     price: 0.99,
     category: categories[0],
     inStock: true,
+    quantity: 36,
   },
   {
     id: '9',
@@ -80,6 +83,7 @@ export const products: Product[] = [
     price: 2.49,
     category: categories[0],
     inStock: true,
+    quantity: 30,
   },
   {
     id: '10',
@@ -87,6 +91,7 @@ export const products: Product[] = [
     price: 1.29,
     category: categories[0],
     inStock: true,
+    quantity: 18,
   },
   {
     id: '11',
@@ -94,6 +99,7 @@ export const products: Product[] = [
     price: 0.79,
     category: categories[0],
     inStock: true,
+    quantity: 40,
   },
   // Meat
   {
@@ -102,6 +108,7 @@ export const products: Product[] = [
     price: 8.99,
     category: categories[1],
     inStock: true,
+    quantity: 15,
   },
   {
     id: '5',
@@ -109,6 +116,7 @@ export const products: Product[] = [
     price: 12.99,
     category: categories[1],
     inStock: true,
+    quantity: 10,
   },
   {
     id: '6',
@@ -116,6 +124,7 @@ export const products: Product[] = [
     price: 9.99,
     category: categories[1],
     inStock: true,
+    quantity: 20,
   },
   {
     id: '12',
@@ -123,6 +132,7 @@ export const products: Product[] = [
     price: 10.49,
     category: categories[1],
     inStock: true,
+    quantity: 8,
   },
   {
     id: '13',
@@ -130,6 +140,7 @@ export const products: Product[] = [
     price: 14.99,
     category: categories[1],
     inStock: true,
+    quantity: 6,
   },
   // Daily Essentials
   {
@@ -138,6 +149,7 @@ export const products: Product[] = [
     price: 3.50,
     category: categories[2],
     inStock: true,
+    quantity: 50,
   },
   {
     id: '8',
@@ -145,6 +157,7 @@ export const products: Product[] = [
     price: 2.80,
     category: categories[2],
     inStock: true,
+    quantity: 40,
   },
   {
     id: '14',
@@ -152,6 +165,7 @@ export const products: Product[] = [
     price: 4.20,
     category: categories[2],
     inStock: true,
+    quantity: 22,
   },
   {
     id: '15',
@@ -159,8 +173,69 @@ export const products: Product[] = [
     price: 3.10,
     category: categories[2],
     inStock: true,
+    quantity: 28,
   },
 ];
+
+// Orders in-memory store for this demo
+export const orders: Order[] = [];
+
+const generateId = (): string => Math.random().toString(36).slice(2, 10);
+
+export const canAddProductToCart = (product: Product, currentQtyInCart: number, addQty: number = 1): boolean => {
+  const max = Math.max(0, product.quantity ?? 0);
+  return currentQtyInCart + addQty <= max && max > 0;
+};
+
+export interface CheckoutResult {
+  order: Order;
+}
+
+export const checkout = (items: { product: Product; quantity: number }[]): CheckoutResult => {
+  // Validate: no zero-qty products and not exceeding stock
+  for (const { product, quantity } of items) {
+    const available = Math.max(0, product.quantity ?? 0);
+    if (available === 0) {
+      throw new Error(`Product ${product.name} is out of stock.`);
+    }
+    if (quantity <= 0) {
+      throw new Error(`Invalid quantity for ${product.name}.`);
+    }
+    if (quantity > available) {
+      throw new Error(`Quantity for ${product.name} exceeds available stock.`);
+    }
+  }
+
+  // Build order line items
+  const orderItems: OrderItem[] = items.map(({ product, quantity }) => ({
+    product: { ...product },
+    quantity,
+    lineTotal: product.price * quantity,
+  }));
+  const total = orderItems.reduce((acc, it) => acc + it.lineTotal, 0);
+  const order: Order = {
+    id: generateId(),
+    items: orderItems,
+    total,
+    createdAt: new Date().toISOString(),
+  };
+
+  // Decrease product stock (never below zero)
+  for (const { product, quantity } of items) {
+    const idx = products.findIndex((p) => p.id === product.id);
+    if (idx !== -1) {
+      const available = Math.max(0, products[idx].quantity ?? 0);
+      const next = available - quantity;
+      products[idx].quantity = next < 0 ? 0 : next;
+      products[idx].inStock = products[idx].quantity > 0;
+    }
+  }
+
+  // Save order
+  orders.push(order);
+
+  return { order };
+};
 
 const normalize = (value: string): string => value.toLowerCase().trim();
 

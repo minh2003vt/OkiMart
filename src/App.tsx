@@ -4,6 +4,7 @@ import MainLayout from '@/layouts/MainLayout';
 import Home from '@/pages/Home';
 import Orders from '@/pages/Orders';
 import Profile from '@/pages/Profile';
+import Search from '@/pages/Search';
 
 const App: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ const App: React.FC = () => {
       <MainLayout>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/search" element={<Search />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/profile" element={<Profile />} />
         </Routes>

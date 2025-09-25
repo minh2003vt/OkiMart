@@ -43,6 +43,7 @@ const Home: React.FC = () => {
         value={searchQuery}
         onChange={setSearchQuery}
         placeholder="Search Oki Mart"
+        navigateOnChange
       />
 
       {/* Store Header fixed under search */}

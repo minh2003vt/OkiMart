@@ -7,6 +7,7 @@ export interface Product {
   category: ProductCategory;
   inStock: boolean;
   description?: string;
+  quantity: number;
 }
 
 export interface ProductCategory {
@@ -30,6 +31,19 @@ export interface Store {
 export interface CartItem {
   product: Product;
   quantity: number;
+}
+
+export interface OrderItem {
+  product: Product; // snapshot at time of purchase
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface Order {
+  id: string;
+  items: OrderItem[];
+  total: number;
+  createdAt: string; // ISO string
 }
 
 export interface Cart {

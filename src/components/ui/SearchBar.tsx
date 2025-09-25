@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, ArrowLeft, ShoppingCart } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import { cn } from '@/utils';
+import CartSheet from './CartSheet';
 
 interface SearchBarProps {
   placeholder?: string;
@@ -9,6 +11,7 @@ interface SearchBarProps {
   onChange?: (value: string) => void;
   onBack?: () => void;
   className?: string;
+  navigateOnChange?: boolean;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({
@@ -17,8 +20,11 @@ const SearchBar: React.FC<SearchBarProps> = ({
   onChange,
   onBack,
   className,
+  navigateOnChange = false,
 }) => {
   const itemCount = useCartStore((s) => s.itemCount());
+  const navigate = useNavigate();
+  const [isCartOpen, setIsCartOpen] = useState(false);
   return (
     <div className={cn('flex items-center space-x-3 px-4 py-3 bg-white sticky top-0 z-40 border-b border-gray-100', className)}>
       {onBack && (
@@ -39,20 +45,26 @@ const SearchBar: React.FC<SearchBarProps> = ({
           type="text"
           placeholder={placeholder}
           value={value}
-          onChange={(e) => onChange?.(e.target.value)}
+          onChange={(e) => {
+            const v = e.target.value;
+            onChange?.(v);
+            if (navigateOnChange) {
+              const q = encodeURIComponent(v);
+              navigate(`/search?q=${q}`);
+            }
+          }}
           className="w-full pl-10 pr-4 py-2 bg-gray-100 border-0 rounded-lg text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:bg-white transition-colors"
         />
       </div>
 
       {/* Cart icon with badge */}
-      <div className="relative">
+      <button className="relative p-1 rounded-full hover:bg-gray-100" onClick={() => setIsCartOpen(true)} aria-label="Open cart">
         <ShoppingCart className="h-5 w-5 text-gray-700" />
-        {itemCount > 0 && (
-          <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full px-1.5 py-0.5">
-            {itemCount}
-          </span>
-        )}
-      </div>
+        <span className="absolute -top-2 -right-2 bg-primary-600 text-white text-xs rounded-full px-1.5 py-0.5">
+          {itemCount}
+        </span>
+      </button>
+      <CartSheet open={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 };
