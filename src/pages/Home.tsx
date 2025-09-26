@@ -15,30 +15,25 @@ const Home: React.FC = () => {
   const handleAddToCart = (_product: Product) => {};
 
   const handleSmartListTagClick = (tag: SmartListTag) => {
-    // TODO: Implement smart list tag functionality
     console.log('Smart list tag clicked:', tag);
   };
 
   const handleTrySmartList = () => {
-    // TODO: Implement try smart list functionality
     console.log('Try smart list clicked');
   };
 
   const handleSeeAll = (category: ProductCategory) => {
-    // TODO: Implement see all functionality
     console.log('See all clicked for category:', category);
   };
 
   return (
     <div className="min-h-screen bg-white">
-      {/* App Title */}
       <div className="text-center py-2 bg-white border-b border-gray-100">
         <h1 className="text-lg font-bold text-gray-900">
           Okimart Store - Fast Essentials
         </h1>
       </div>
 
-      {/* Search Bar */}
       <SearchBar
         value={searchQuery}
         onChange={setSearchQuery}
@@ -46,22 +41,18 @@ const Home: React.FC = () => {
         navigateOnChange
       />
 
-      {/* Store Header fixed under search */}
       <div className="sticky top-[56px] z-30">
         <StoreHeader store={storeData} />
       </div>
 
-      {/* Smart List */}
       <SmartList
         tags={smartListTags}
         onTagClick={handleSmartListTagClick}
         onTrySmartList={handleTrySmartList}
       />
 
-      {/* Delivery Banner */}
       <DeliveryBanner deliveryInfo={deliveryInfo} />
 
-      {/* Product Categories (dynamic search) */}
       <div className="space-y-6">
         {categories.map((category) => (
           <ProductSection

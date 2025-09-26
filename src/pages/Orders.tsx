@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { orders } from '@/services/data';
+import { useAuthStore } from '@/store/auth';
 import { formatCurrency } from '@/utils';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 
@@ -8,16 +9,18 @@ const Orders: React.FC = () => {
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
 
+  const currentUser = useAuthStore((s) => s.currentUser);
   const filteredOrders = useMemo(() => {
     const fromTs = dateFrom ? new Date(dateFrom).getTime() : -Infinity;
     const toTs = dateTo ? new Date(dateTo).getTime() : Infinity;
     return orders.filter((o) => {
+      if (currentUser && o.userId !== currentUser.id) return false;
       const ts = new Date(o.createdAt).getTime();
       return ts >= fromTs && ts <= toTs;
     });
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, currentUser]);
 
-  if (orders.length === 0) {
+  if (filteredOrders.length === 0) {
     return (
       <div className="min-h-screen bg-white p-4">
         <div className="text-center py-12">
@@ -31,19 +34,19 @@ const Orders: React.FC = () => {
   return (
     <div className="min-h-screen bg-white p-4">
       <h1 className="text-xl font-bold text-gray-900 mb-4">Your Orders</h1>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <input
+      <div className="grid grid-cols-2 gap-5 mb-4">
+        <div className="text-sm text-gray-900 mb-4">Start Date<input
           type="date"
           className="w-full bg-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
           value={dateFrom}
           onChange={(e) => setDateFrom(e.target.value)}
-        />
-        <input
+        /> </div>
+        <div className="text-sm text-gray-900 mb-4">End Date<input
           type="date"
           className="w-full bg-gray-100 text-sm rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
           value={dateTo}
           onChange={(e) => setDateTo(e.target.value)}
-        />
+        /> </div>
       </div>
       <div className="space-y-3">
         {filteredOrders

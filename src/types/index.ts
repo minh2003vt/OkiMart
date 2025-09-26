@@ -34,16 +34,17 @@ export interface CartItem {
 }
 
 export interface OrderItem {
-  product: Product; // snapshot at time of purchase
+  product: Product; 
   quantity: number;
   lineTotal: number;
 }
 
 export interface Order {
   id: string;
+  userId: string; 
   items: OrderItem[];
   total: number;
-  createdAt: string; // ISO string
+  createdAt: string; 
 }
 
 export interface Cart {
@@ -74,3 +75,13 @@ export interface DeliveryInfo {
 }
 
 export type Page = 'home' | 'orders' | 'profile';
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  password: string;
+  dob: string;
+  address: string;
+  phone: string;
+}

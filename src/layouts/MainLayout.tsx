@@ -22,6 +22,9 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     navigate(path);
   };
 
+  // Hide bottom nav on auth pages
+  const hideNav = location.pathname.startsWith('/login') || location.pathname.startsWith('/register');
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Main Content */}
@@ -30,12 +33,14 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
       </main>
       
       {/* Bottom Navigation */}
-      <div className="fixed bottom-0 inset-x-0 z-40">
-        <BottomNavigation
-          activePage={getActivePage()}
-          onNavigate={handleNavigation}
-        />
-      </div>
+      {!hideNav && (
+        <div className="fixed bottom-0 inset-x-0 z-40">
+          <BottomNavigation
+            activePage={getActivePage()}
+            onNavigate={handleNavigation}
+          />
+        </div>
+      )}
     </div>
   );
 };

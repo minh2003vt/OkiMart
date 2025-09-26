@@ -1,4 +1,5 @@
 import { Product, Store, SmartListTag, ProductCategory, DeliveryInfo, Order, OrderItem } from '@/types';
+import { useAuthStore } from '@/store/auth';
 
 export const storeData: Store = {
   id: '1',
@@ -51,7 +52,6 @@ export const categories: ProductCategory[] = [
 ];
 
 export const products: Product[] = [
-  // Produce
   {
     id: '1',
     name: 'Avocado',
@@ -101,7 +101,7 @@ export const products: Product[] = [
     inStock: true,
     quantity: 40,
   },
-  // Meat
+  
   {
     id: '4',
     name: 'Chicken',
@@ -142,7 +142,7 @@ export const products: Product[] = [
     inStock: true,
     quantity: 6,
   },
-  // Daily Essentials
+  
   {
     id: '7',
     name: 'Milk 1L',
@@ -177,7 +177,6 @@ export const products: Product[] = [
   },
 ];
 
-// Orders in-memory store for this demo
 export const orders: Order[] = [];
 
 const generateId = (): string => Math.random().toString(36).slice(2, 10);
@@ -192,7 +191,6 @@ export interface CheckoutResult {
 }
 
 export const checkout = (items: { product: Product; quantity: number }[]): CheckoutResult => {
-  // Validate: no zero-qty products and not exceeding stock
   for (const { product, quantity } of items) {
     const available = Math.max(0, product.quantity ?? 0);
     if (available === 0) {
@@ -206,21 +204,21 @@ export const checkout = (items: { product: Product; quantity: number }[]): Check
     }
   }
 
-  // Build order line items
   const orderItems: OrderItem[] = items.map(({ product, quantity }) => ({
     product: { ...product },
     quantity,
     lineTotal: product.price * quantity,
   }));
   const total = orderItems.reduce((acc, it) => acc + it.lineTotal, 0);
+  const userId = useAuthStore.getState().currentUser?.id ?? 'guest';
   const order: Order = {
     id: generateId(),
+    userId,
     items: orderItems,
     total,
     createdAt: new Date().toISOString(),
   };
 
-  // Decrease product stock (never below zero)
   for (const { product, quantity } of items) {
     const idx = products.findIndex((p) => p.id === product.id);
     if (idx !== -1) {
@@ -231,7 +229,6 @@ export const checkout = (items: { product: Product; quantity: number }[]): Check
     }
   }
 
-  // Save order
   orders.push(order);
 
   return { order };

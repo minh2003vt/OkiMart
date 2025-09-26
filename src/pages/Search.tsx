@@ -4,6 +4,7 @@ import SearchBar from '@/components/ui/SearchBar';
 import { categories, products } from '@/services/data';
 import { Product, ProductCategory } from '@/types';
 import ProductCard from '@/components/ui/ProductCard';
+import ProductDetailModal from '@/components/ui/ProductDetailModal';
 
 const useQuery = () => {
   const { search } = useLocation();
@@ -15,6 +16,7 @@ const Search: React.FC = () => {
   const [query, setQuery] = useState<string>(qs.get('q') ?? '');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [maxPrice, setMaxPrice] = useState<number | ''>('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   const filtered: Product[] = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -58,12 +60,14 @@ const Search: React.FC = () => {
 
       <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
         {filtered.map((p) => (
-          <ProductCard key={p.id} product={p} layout="grid" />
+          <ProductCard key={p.id} product={p} layout="grid" onAddToCart={(prod) => setSelectedProduct(prod)} />
         ))}
         {filtered.length === 0 && (
           <div className="col-span-full text-center text-gray-600 py-12">No products match your filters.</div>
         )}
       </div>
+
+      <ProductDetailModal product={selectedProduct} onClose={() => setSelectedProduct(null)} />
     </div>
   );
 };

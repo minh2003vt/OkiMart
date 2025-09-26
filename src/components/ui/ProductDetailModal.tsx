@@ -13,7 +13,7 @@ interface ProductDetailModalProps {
 
 const InnerModal: React.FC<{ product: Product; onClose: () => void }> = ({ product, onClose }) => {
   const add = useCartStore((s) => s.add);
-  const [selectedQty, setSelectedQty] = useState<number>(Math.max(1, product.quantity ?? 1));
+  const [selectedQty, setSelectedQty] = useState<number>(0);
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
 
   const handleAdd = () => {
@@ -21,7 +21,7 @@ const InnerModal: React.FC<{ product: Product; onClose: () => void }> = ({ produ
     onClose();
   };
 
-  const decrease = () => setSelectedQty((q) => Math.max(1, q - 1));
+  const decrease = () => setSelectedQty((q) => Math.max(0, q - 1));
   const increase = () => setSelectedQty((q) => Math.min(product.quantity ?? 99, q + 1));
 
   useEffect(() => {
@@ -30,7 +30,6 @@ const InnerModal: React.FC<{ product: Product; onClose: () => void }> = ({ produ
     };
     window.addEventListener('keydown', onKeyDown);
     document.body.classList.add('overflow-hidden');
-    // move initial focus to close button for accessibility
     closeBtnRef.current?.focus();
     return () => {
       window.removeEventListener('keydown', onKeyDown);
@@ -129,8 +128,8 @@ const InnerModal: React.FC<{ product: Product; onClose: () => void }> = ({ produ
               <Button
                 className="w-full bg-green-600 text-white hover:bg-green-700 focus:ring-green-500 disabled:opacity-50"
                 onClick={handleAdd}
-                disabled={selectedQty > (product.quantity ?? Number.MAX_SAFE_INTEGER)}
-                title={selectedQty > (product.quantity ?? Number.MAX_SAFE_INTEGER) ? 'Quantity exceeds stock' : 'Add to cart'}
+                disabled={selectedQty <= 0 || selectedQty > (product.quantity ?? Number.MAX_SAFE_INTEGER)}
+                title={selectedQty <= 0 ? 'Select at least 1 item' : selectedQty > (product.quantity ?? Number.MAX_SAFE_INTEGER) ? 'Quantity exceeds stock' : 'Add to cart'}
               >
                 <ShoppingCart className="h-4 w-4 mr-1" /> Add {selectedQty} to cart
               </Button>

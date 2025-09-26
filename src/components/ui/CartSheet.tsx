@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { X, Plus, Minus, Trash2 } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
+import { useAuthStore } from '@/store/auth';
 import { formatCurrency } from '@/utils';
 import { checkout } from '@/services/data';
 
@@ -11,7 +12,9 @@ interface CartSheetProps {
 }
 
 const CartSheet: React.FC<CartSheetProps> = ({ open, onClose }) => {
-  const items = useCartStore((s) => s.items);
+  const userId = useAuthStore((s) => s.currentUser?.id ?? 'guest');
+  const itemsByUserId = useCartStore((s) => s.itemsByUserId);
+  const items = itemsByUserId?.[userId] ?? {};
   const remove = useCartStore((s) => s.remove);
   const add = useCartStore((s) => s.add);
   const decrement = useCartStore((s) => s.decrement);
@@ -110,15 +113,13 @@ const CartSheet: React.FC<CartSheetProps> = ({ open, onClose }) => {
             onClick={() => {
               const cartItems = Object.values(items);
               if (cartItems.length === 0) return;
-              // Validate none are zero stock at checkout time
               const normalized = cartItems.map(({ product, quantity }) => ({ product, quantity }));
               try {
                 checkout(normalized);
                 clear();
                 onClose();
               } catch (err) {
-                // eslint-disable-next-line no-alert
-                alert(err instanceof Error ? err.message : 'Checkout failed.');
+                console.error(err instanceof Error ? err.message : 'Checkout failed.');
               }
             }}
           >

@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product } from '@/types';
+import { useAuthStore } from '@/store/auth';
 
 interface CartState {
-  items: Record<string, CartItem>;
+  itemsByUserId: Record<string, Record<string, CartItem>>;
   add: (product: Product, quantity?: number) => void;
   remove: (productId: string) => void;
   decrement: (productId: string, quantity?: number) => void;
@@ -14,77 +15,90 @@ interface CartState {
   total: () => number;
 }
 
+const getActiveUserId = (): string => useAuthStore.getState().currentUser?.id ?? 'guest';
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
-      items: {},
+      itemsByUserId: {},
       add: (product, quantity = 1) =>
         set((state) => {
-          const existing = state.items[product.id];
+          const userId = getActiveUserId();
+          const items = state.itemsByUserId[userId] ?? {};
+          const existing = items[product.id];
           const max = Math.max(0, product.quantity ?? 0);
           if (max === 0) {
             return state;
           }
           const desired = (existing?.quantity ?? 0) + quantity;
           const nextQty = Math.min(desired, max);
+          const nextItems = { ...items } as Record<string, CartItem>;
           if (nextQty <= 0) {
-            const { [product.id]: _r, ...rest } = state.items;
-            return { items: rest } as Pick<CartState, 'items'>;
+            delete nextItems[product.id];
+          } else {
+            nextItems[product.id] = { product, quantity: nextQty };
           }
           return {
-            items: {
-              ...state.items,
-              [product.id]: { product, quantity: nextQty },
-            },
+            itemsByUserId: { ...state.itemsByUserId, [userId]: nextItems },
           };
         }),
       remove: (productId) =>
         set((state) => {
-          const { [productId]: _, ...rest } = state.items;
-          return { items: rest } as Pick<CartState, 'items'>;
+          const userId = getActiveUserId();
+          const items = { ...(state.itemsByUserId[userId] ?? {}) } as Record<string, CartItem>;
+          delete items[productId];
+          return { itemsByUserId: { ...state.itemsByUserId, [userId]: items } };
         }),
       decrement: (productId, quantity = 1) =>
         set((state) => {
-          const item = state.items[productId];
+          const userId = getActiveUserId();
+          const items = { ...(state.itemsByUserId[userId] ?? {}) } as Record<string, CartItem>;
+          const item = items[productId];
           if (!item) return {} as Pick<CartState, never>;
           const nextQty = item.quantity - quantity;
           if (nextQty <= 0) {
-            const { [productId]: _, ...rest } = state.items;
-            return { items: rest } as Pick<CartState, 'items'>;
+            delete items[productId];
+          } else {
+            items[productId] = { ...item, quantity: nextQty };
           }
-          return {
-            items: {
-              ...state.items,
-              [productId]: { ...item, quantity: nextQty },
-            },
-          };
+          return { itemsByUserId: { ...state.itemsByUserId, [userId]: items } };
         }),
       setQuantity: (productId, quantity) =>
         set((state) => {
-          const item = state.items[productId];
+          const userId = getActiveUserId();
+          const items = { ...(state.itemsByUserId[userId] ?? {}) } as Record<string, CartItem>;
+          const item = items[productId];
           if (quantity <= 0) {
-            const { [productId]: _, ...rest } = state.items;
-            return { items: rest } as Pick<CartState, 'items'>;
+            delete items[productId];
+            return { itemsByUserId: { ...state.itemsByUserId, [userId]: items } };
           }
           if (!item) return state;
           const max = Math.max(0, item.product.quantity ?? 0);
           const clamped = Math.min(quantity, max);
-          return {
-            items: {
-              ...state.items,
-              [productId]: { ...item, quantity: clamped },
-            },
-          };
+          items[productId] = { ...item, quantity: clamped };
+          return { itemsByUserId: { ...state.itemsByUserId, [userId]: items } };
         }),
-      getQuantity: (productId) => get().items[productId]?.quantity ?? 0,
-      clear: () => set({ items: {} }),
-      itemCount: () => Object.values(get().items).reduce((acc, it) => acc + it.quantity, 0),
-      total: () => Object.values(get().items).reduce((acc, it) => acc + it.product.price * it.quantity, 0),
+      getQuantity: (productId) => {
+        const userId = getActiveUserId();
+        return get().itemsByUserId[userId]?.[productId]?.quantity ?? 0;
+      },
+      clear: () => {
+        const userId = getActiveUserId();
+        set((state) => ({ itemsByUserId: { ...state.itemsByUserId, [userId]: {} } }));
+      },
+      itemCount: () => {
+        const userId = getActiveUserId();
+        return Object.values(get().itemsByUserId[userId] ?? {}).reduce((acc, it) => acc + it.quantity, 0);
+      },
+      total: () => {
+        const userId = getActiveUserId();
+        return Object.values(get().itemsByUserId[userId] ?? {}).reduce((acc, it) => acc + it.product.price * it.quantity, 0);
+      },
     }),
     {
       name: 'okimart-cart',
       storage: createJSONStorage(() => localStorage),
-      partialize: (state) => ({ items: state.items }),
+      partialize: (state) => ({ itemsByUserId: state.itemsByUserId }),
     }
   )
 );
